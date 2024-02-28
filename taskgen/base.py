@@ -563,6 +563,16 @@ class Function:
             else:
                 function_kwargs['var'+str(num+1)] = arg
                 
+        # Check if external function is set
+        if self.external_fn:
+            # Call the external function with unpacked kwargs
+            try:
+                fn_output = self.external_fn(**function_kwargs)
+            except TypeError as e:
+                print(f"Error calling function: {e}")
+                # Handle the error or re-raise with more information
+                raise
+        
         # If strict_json function, do the function. 
         if self.external_fn is None:
             res = strict_json(system_prompt = self.fn_description,

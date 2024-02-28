@@ -4,6 +4,8 @@ from openai import OpenAI
 import numpy as np
 import copy
 from .base import *
+import importlib
+import json
 
 ### Helper Functions
 def top_k_index(lst, k):
@@ -278,6 +280,41 @@ class Agent:
             
         return self
         
+    def load_functions_from_json(self, json_file_path):
+        """
+        Loads and assigns functions to the agent based on descriptions in a JSON file.
+        
+        Parameters:
+        - json_file_path: str. The file path to the JSON file containing function descriptions.
+        """
+        # Load function descriptions from the JSON file
+        with open(json_file_path, 'r') as file:
+            function_descriptions = json.load(file).get('functions', [])
+        
+        # Iterate over the function descriptions and load each function
+        for fn_desc in function_descriptions:
+            module_name = fn_desc['module']
+            fn_name = fn_desc['function']
+            fn_description = fn_desc.get('description', '')
+            
+            # Dynamically import the module
+            module = importlib.import_module(module_name)
+            
+            # Attempt to load the function from the module
+            try:
+                fn = getattr(module, fn_name)
+                # Wrap the loaded function in a Function object
+                loaded_function = Function(
+                    fn_name=fn_name,
+                    fn_description=fn_description,
+                    external_fn=fn
+                )
+                # Assign the loaded function to the agent
+                self.assign_functions([loaded_function])
+                print(f"Loaded and assigned function: {fn_name}")
+            except AttributeError:
+                print(f"Function {fn_name} not found in module {module_name}.")
+
     def remove_function(self, function_name: str):
         ''' Removes a function from the agent '''
         if function_name in self.function_map:
